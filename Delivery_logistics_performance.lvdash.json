@@ -1,0 +1,567 @@
+{
+  "datasets": [
+    {
+      "name": "a70ba3e7",
+      "displayName": "ontime vs delayed",
+      "queryLines": [
+        "SELECT\r\n",
+        "  on_time,   \r\n",
+        "  COUNT(*) AS num_deliveries,\r\n",
+        "  ROUND(AVG(distance_km), 2) AS avg_distance_km,\r\n",
+        "  ROUND(AVG(delivery_time_hours), 2) AS avg_delivery_time_hours,\r\n",
+        "  ROUND(AVG(delivery_cost), 2) AS avg_delivery_cost,\r\n",
+        "  ROUND(AVG(package_weight_kg), 2) AS avg_package_weight_kg\r\n",
+        "FROM delivery_logistic_clean\r\n",
+        "GROUP BY on_time\r\n",
+        "ORDER BY on_time;"
+      ],
+      "catalog": "workspace",
+      "schema": "delivery_logistics"
+    },
+    {
+      "name": "a7bb2053",
+      "displayName": "partner_performance",
+      "queryLines": [
+        "\r\n",
+        "SELECT\r\n",
+        "  delivery_partner,\r\n",
+        "  COUNT(*) AS num_deliveries,\r\n",
+        "  ROUND(AVG(delayed) * 100, 1) AS delay_rate_percent,\r\n",
+        "  ROUND(AVG(delivery_rating), 2) AS avg_rating,\r\n",
+        "  ROUND(AVG(delivery_cost), 2) AS avg_cost\r\n",
+        "FROM delivery_logistic_clean\r\n",
+        "GROUP BY delivery_partner\r\n",
+        "HAVING COUNT(*) >= 5      -- ignore partners with very few deliveries\r\n",
+        "ORDER BY avg_rating DESC;"
+      ],
+      "catalog": "workspace",
+      "schema": "delivery_logistics"
+    },
+    {
+      "name": "26fb7496",
+      "displayName": "cost efficiency by mode",
+      "queryLines": [
+        "\r\n",
+        "SELECT\r\n",
+        "  delivery_mode,\r\n",
+        "  COUNT(*) AS num_deliveries,\r\n",
+        "  ROUND(AVG(delivery_cost), 2) AS avg_delivery_cost,\r\n",
+        "  ROUND(AVG(distance_km), 2) AS avg_distance_km,\r\n",
+        "  ROUND(AVG(cost_per_km), 2) AS avg_cost_per_km\r\n",
+        "FROM delivery_logistic_clean\r\n",
+        "GROUP BY delivery_mode\r\n",
+        "ORDER BY avg_cost_per_km;"
+      ],
+      "catalog": "workspace",
+      "schema": "delivery_logistics"
+    },
+    {
+      "name": "9fbbd253",
+      "displayName": "weather vs delay",
+      "queryLines": [
+        "\r\n",
+        "SELECT\r\n",
+        "  weather_condition,\r\n",
+        "  COUNT(*) AS num_deliveries,\r\n",
+        "  ROUND(AVG(delayed) * 100, 1) AS delay_rate_percent,\r\n",
+        "  ROUND(AVG(delay_hours), 2) AS avg_delay_hours\r\n",
+        "FROM delivery_logistic_clean\r\n",
+        "GROUP BY weather_condition\r\n",
+        "ORDER BY delay_rate_percent DESC;"
+      ],
+      "catalog": "workspace",
+      "schema": "delivery_logistics"
+    },
+    {
+      "name": "bd1356a4",
+      "displayName": "delay rate by region",
+      "queryLines": [
+        "\r\n",
+        "SELECT\r\n",
+        "  region,\r\n",
+        "  COUNT(*) AS num_deliveries,\r\n",
+        "  ROUND(AVG(delayed) * 100, 1) AS delay_rate_percent,\r\n",
+        "  ROUND(AVG(delivery_time_hours), 2) AS avg_delivery_time_hours,\r\n",
+        "  ROUND(AVG(distance_km), 2) AS avg_distance_km\r\n",
+        "FROM delivery_logistic_clean\r\n",
+        "GROUP BY region\r\n",
+        "ORDER BY delay_rate_percent DESC;"
+      ],
+      "catalog": "workspace",
+      "schema": "delivery_logistics"
+    }
+  ],
+  "pages": [
+    {
+      "name": "f4b400f7",
+      "displayName": "perfoemance_dashboard",
+      "layout": [
+        {
+          "widget": {
+            "name": "551ccf9c",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "9fbbd253",
+                  "fields": [
+                    {
+                      "name": "countdistinct(delay_rate_percent)",
+                      "expression": "COUNT(DISTINCT `delay_rate_percent`)"
+                    },
+                    {
+                      "name": "weather_condition",
+                      "expression": "`weather_condition`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "countdistinct(delay_rate_percent)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "weather_condition",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Weather conditions and  Delay Rates"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "c24cb236",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "bd1356a4",
+                  "fields": [
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    },
+                    {
+                      "name": "sum(delay_rate_percent)",
+                      "expression": "SUM(`delay_rate_percent`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "region",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "sum(delay_rate_percent)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Delay rate by region %"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "7f0865fa",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "a7bb2053",
+                  "fields": [
+                    {
+                      "name": "delivery_partner",
+                      "expression": "`delivery_partner`"
+                    },
+                    {
+                      "name": "num_deliveries",
+                      "expression": "`num_deliveries`"
+                    },
+                    {
+                      "name": "delay_rate_percent",
+                      "expression": "`delay_rate_percent`"
+                    },
+                    {
+                      "name": "avg_rating",
+                      "expression": "`avg_rating`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "scatter",
+              "encodings": {
+                "x": {
+                  "fieldName": "delay_rate_percent",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg_rating",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "delivery_partner",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "size": {
+                  "fieldName": "num_deliveries",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Delivery Partner Performance (Rating vs Delay %)"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "33dbf42e",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "26fb7496",
+                  "fields": [
+                    {
+                      "name": "sum(avg_cost_per_km)",
+                      "expression": "SUM(`avg_cost_per_km`)"
+                    },
+                    {
+                      "name": "delivery_mode",
+                      "expression": "`delivery_mode`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "sum(avg_cost_per_km)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "delivery_mode",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Cost per KM by Delivery Mode"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "90e0e79e",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "3cbffbc4",
+            "queries": [
+              {
+                "name": "dashboards/01f0cc98fe091c5c8a772fa92efd4ab4/datasets/01f0cc9956121c48920546b08fffab2e_delivery_mode",
+                "query": {
+                  "datasetName": "26fb7496",
+                  "fields": [
+                    {
+                      "name": "delivery_mode",
+                      "expression": "`delivery_mode`"
+                    },
+                    {
+                      "name": "delivery_mode_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "delivery_mode",
+                    "queryName": "dashboards/01f0cc98fe091c5c8a772fa92efd4ab4/datasets/01f0cc9956121c48920546b08fffab2e_delivery_mode"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "e23d8e4f",
+            "queries": [
+              {
+                "name": "dashboards/01f0cc98fe091c5c8a772fa92efd4ab4/datasets/01f0cc9983ef1caf9de9a5e95cf6b6cc_region",
+                "query": {
+                  "datasetName": "bd1356a4",
+                  "fields": [
+                    {
+                      "name": "region",
+                      "expression": "`region`"
+                    },
+                    {
+                      "name": "region_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "region",
+                    "queryName": "dashboards/01f0cc98fe091c5c8a772fa92efd4ab4/datasets/01f0cc9983ef1caf9de9a5e95cf6b6cc_region"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "85302e88",
+            "queries": [
+              {
+                "name": "dashboards/01f0cc98fe091c5c8a772fa92efd4ab4/datasets/01f0cc996d461ba4b640d7760fb2cafa_weather_condition",
+                "query": {
+                  "datasetName": "9fbbd253",
+                  "fields": [
+                    {
+                      "name": "weather_condition",
+                      "expression": "`weather_condition`"
+                    },
+                    {
+                      "name": "weather_condition_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "weather_condition",
+                    "queryName": "dashboards/01f0cc98fe091c5c8a772fa92efd4ab4/datasets/01f0cc996d461ba4b640d7760fb2cafa_weather_condition"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
